@@ -1,0 +1,11 @@
+name: unlearning
+channels:
+  - defaults
+dependencies:
+  - pip=24.2
+  - python=3.10
+  - pip:
+      - fsspec==2024.10.0
+      - huggingface-hub==0.26.1
+      - numpy==2.1.2
+      - pandas==2.2.3
