@@ -4,14 +4,22 @@ from config import SAFERLHF_DIR
 
 DATA_DIR: str = os.path.join(SAFERLHF_DIR, 'data')
 os.makedirs(DATA_DIR, exist_ok=True)
-ORIGINAL_DATA_FILE_NAME: str = 'original.csv'
-ORIGINAL_DATA_FILE: str = os.path.join(DATA_DIR, ORIGINAL_DATA_FILE_NAME)
+ORIGINAL_DATA_FILE_NAME: str = 'original'
+ORIGINAL_DATA_FILE: str = os.path.join(
+    DATA_DIR, f'{ORIGINAL_DATA_FILE_NAME}.csv')
 
 CLS_DATA_DIR: str = os.path.join(DATA_DIR, 'classification')
 os.makedirs(CLS_DATA_DIR, exist_ok=True)
-CLS_SAFE_DATA_FILE_NAME: str = 'safe.csv'
+CLS_DATA_STATS_FILE_NAME: str = 'metadata'
+CLS_DATA_STATS_FILE: str = os.path.join(
+    CLS_DATA_DIR, f'{CLS_DATA_STATS_FILE_NAME}.csv')
+
+CLS_SAFE_DATA_FILE_NAME: str = 'safe'
 CLS_SAFE_DATA_FILE: str = os.path.join(
-    CLS_DATA_DIR, CLS_SAFE_DATA_FILE_NAME)
+    CLS_DATA_DIR, f'{CLS_SAFE_DATA_FILE_NAME}.csv')
+
+CLS_TRAIN_TEST_DATA_DIR: str = os.path.join(CLS_DATA_DIR, 'train_test')
+os.makedirs(CLS_TRAIN_TEST_DATA_DIR, exist_ok=True)
 
 SEQ2SEQ_DATA_DIR: str = os.path.join(DATA_DIR, 'transformation')
 os.makedirs(SEQ2SEQ_DATA_DIR, exist_ok=True)
