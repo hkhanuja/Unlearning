@@ -11,11 +11,16 @@ conda env list | grep -q "^$ENV_NAME"
 
 if [ $? -eq 0 ]; then
   echo "Conda environment '$ENV_NAME' already exists."
+  # Activate the environment
+  echo "Activating conda environment '$ENV_NAME'..."
+  conda activate $ENV_NAME
 else
   echo "Creating conda environment '$ENV_NAME' from $ENV_FILE..."
   conda env create -f $ENV_FILE
-fi
 
-# Activate the environment
-echo "Activating conda environment '$ENV_NAME'..."
-conda activate $ENV_NAME
+  # Activate the environment
+  echo "Activating conda environment '$ENV_NAME'..."
+  conda activate $ENV_NAME
+
+  pip install -r torch_requirements.txt
+fi
