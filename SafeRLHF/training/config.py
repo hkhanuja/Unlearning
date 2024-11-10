@@ -1,0 +1,10 @@
+VAL_RATIO: float = 0.1
+
+CLS_TARGET_NAME: str = 'is_safe'
+
+CLS_EMBEDDING_DIM: int = 100
+CLS_HIDDEN_DIM: int = 128
+CLS_LR: float = 1e-3
+CLS_MAX_LENGTH: int = 128
+CLS_NUM_EPOCHS: int = 3
+CLS_VOCAB_SIZE: int = 30522

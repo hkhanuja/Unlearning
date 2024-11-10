@@ -2,6 +2,13 @@ import os
 
 from config import SAFERLHF_DIR
 
+LOG_DIR: str = os.path.join(SAFERLHF_DIR, 'log')
+os.makedirs(LOG_DIR, exist_ok=True)
+CLS_LOG_FILE_NAME: str = 'classification'
+CLS_LOG_FILE: str = os.path.join(
+    LOG_DIR, f'{CLS_LOG_FILE_NAME}.txt')
+
+
 DATA_DIR: str = os.path.join(SAFERLHF_DIR, 'data')
 os.makedirs(DATA_DIR, exist_ok=True)
 ORIGINAL_DATA_FILE_NAME: str = 'original'
@@ -21,26 +28,26 @@ CLS_SAFE_DATA_FILE: str = os.path.join(
 CLS_TRAIN_TEST_DATA_DIR: str = os.path.join(CLS_DATA_DIR, 'train_test')
 os.makedirs(CLS_TRAIN_TEST_DATA_DIR, exist_ok=True)
 
-SEQ2SEQ_DATA_DIR: str = os.path.join(DATA_DIR, 'transformation')
-os.makedirs(SEQ2SEQ_DATA_DIR, exist_ok=True)
+TRANSFORMATION_DATA_DIR: str = os.path.join(DATA_DIR, 'transformation')
+os.makedirs(TRANSFORMATION_DATA_DIR, exist_ok=True)
+TRANSFORMATION_DATA_STATS_FILE_NAME: str = 'metadata'
+TRANSFORMATION_DATA_STATS_FILE: str = os.path.join(
+    TRANSFORMATION_DATA_DIR, f'{TRANSFORMATION_DATA_STATS_FILE_NAME}.csv')
+
+TRANSFORMATION_TRAIN_TEST_DATA_DIR: str = os.path.join(
+    TRANSFORMATION_DATA_DIR, 'train_test')
+os.makedirs(TRANSFORMATION_TRAIN_TEST_DATA_DIR, exist_ok=True)
 
 MODELS_DIR: str = os.path.join(SAFERLHF_DIR, 'models')
 os.makedirs(MODELS_DIR, exist_ok=True)
-
-MAX_FEATURES: int = 10000
-SEQUENCE_LENGTH: int = 250
-EMBEDDING_DIM: int = 128
-HIDDEN_DIM: int = 64
-DROPOUT: float = 0.2
-EPOCHS: int = 5
-BATCH_SIZE: int = 32
 
 CLS_MODELS_DIR: str = os.path.join(MODELS_DIR, 'classification')
 os.makedirs(CLS_MODELS_DIR, exist_ok=True)
 CLS_MODELS_PLOTS_DIR: str = os.path.join(CLS_MODELS_DIR, 'plots')
 os.makedirs(CLS_MODELS_PLOTS_DIR, exist_ok=True)
 
-SEQ2SEQ_MODELS_DIR: str = os.path.join(MODELS_DIR, 'seq2seq')
-os.makedirs(SEQ2SEQ_MODELS_DIR, exist_ok=True)
-SEQ2SEQ_MODELS_PLOTS_DIR: str = os.path.join(SEQ2SEQ_MODELS_DIR, 'plots')
-os.makedirs(SEQ2SEQ_MODELS_PLOTS_DIR, exist_ok=True)
+TRANSFORMATION_MODELS_DIR: str = os.path.join(MODELS_DIR, 'transformation')
+os.makedirs(TRANSFORMATION_MODELS_DIR, exist_ok=True)
+TRANSFORMATION_MODELS_PLOTS_DIR: str = os.path.join(
+    TRANSFORMATION_MODELS_DIR, 'plots')
+os.makedirs(TRANSFORMATION_MODELS_PLOTS_DIR, exist_ok=True)
