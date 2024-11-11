@@ -7,6 +7,9 @@ os.makedirs(LOG_DIR, exist_ok=True)
 CLS_LOG_FILE_NAME: str = 'classification'
 CLS_LOG_FILE: str = os.path.join(
     LOG_DIR, f'{CLS_LOG_FILE_NAME}.txt')
+TRANSFORMATION_LOG_FILE_NAME: str = 'transformation'
+TRANSFORMATION_LOG_FILE: str = os.path.join(
+    LOG_DIR, f'{TRANSFORMATION_LOG_FILE_NAME}.txt')
 
 
 DATA_DIR: str = os.path.join(SAFERLHF_DIR, 'data')

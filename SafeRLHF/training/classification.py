@@ -18,7 +18,7 @@ from SafeRLHF.config import (
     CLS_LOG_FILE)
 from SafeRLHF.training.config import (
     VAL_RATIO, CLS_TARGET_NAME, CLS_EMBEDDING_DIM, CLS_HIDDEN_DIM,
-    CLS_LR, CLS_MAX_LENGTH, CLS_NUM_EPOCHS, CLS_VOCAB_SIZE)
+    CLS_LR, CLS_MAX_LENGTH, NUM_EPOCHS)
 
 logging.basicConfig(level=LOG_LEVEL, format=LOG_FORMAT, filename=CLS_LOG_FILE)
 
@@ -51,32 +51,8 @@ class TextDataset(Dataset):
         }
 
 
-# class LSTMClassifier(nn.Module):
-#     def __init__(self, vocab_size=CLS_VOCAB_SIZE, embedding_dim=CLS_EMBEDDING_DIM,
-#                  hidden_dim=CLS_HIDDEN_DIM, output_dim=1, padding_idx=0):
-#         super(LSTMClassifier, self).__init__()
-
-#         self.embedding = nn.Embedding(
-#             vocab_size, embedding_dim, padding_idx=padding_idx)
-#         self.lstm = nn.LSTM(embedding_dim, hidden_dim, batch_first=True)
-#         self.fc = nn.Linear(hidden_dim, output_dim)
-#         self.sigmoid = nn.Sigmoid()
-
-#     def forward(self, input_ids):
-#         """
-#         input_ids: tensor of shape (batch_size, sequence_length) containing token indices
-#         """
-#         # Shape: (batch_size, seq_length, embedding_dim)
-#         embedded = self.embedding(input_ids)
-#         # hidden shape: (1, batch_size, hidden_dim)
-#         lstm_out, (hidden, cell) = self.lstm(embedded)
-#         # Using the last hidden state from LSTM (hidden[-1]) as input to the FC layer
-#         output = self.fc(hidden[-1])  # Shape: (batch_size, output_dim)
-#         output = self.sigmoid(output)  # Shape: (batch_size, output_dim)
-#         return output.squeeze(1)
-
 class LSTMClassifier(nn.Module):
-    def __init__(self, vocab_size=CLS_VOCAB_SIZE, embedding_dim=CLS_EMBEDDING_DIM,
+    def __init__(self, vocab_size, embedding_dim=CLS_EMBEDDING_DIM,
                  hidden_dim=CLS_HIDDEN_DIM, output_dim=1, padding_idx=0):
         super(LSTMClassifier, self).__init__()
         self.embedding = nn.Embedding(
@@ -174,45 +150,6 @@ def evaluate(model, data_loader, device):
     return f1
 
 
-# def train(model, train_loader, criterion, optimizer, device):
-#     model.train()
-#     total_loss = 0
-#     for batch in train_loader:
-#         input_ids = batch['input_ids'].to(device)
-#         labels = batch['label'].float().to(device)
-
-#         optimizer.zero_grad()
-#         outputs = model(input_ids)
-#         loss = criterion(outputs, labels)
-#         loss.backward()
-#         optimizer.step()
-#         total_loss += loss.item()
-
-#     return total_loss / len(train_loader)
-
-
-# def evaluate(model, data_loader, device):
-#     model.eval()
-#     all_labels = []
-#     all_preds = []
-
-#     with torch.no_grad():
-#         for batch in data_loader:
-#             input_ids = batch['input_ids'].to(device)
-#             labels = batch['label'].to(device)
-
-#             outputs = model(input_ids)
-#             preds = (outputs > 0.5).int()
-
-#             # Move tensors to CPU and add to the lists for metric calculation
-#             all_labels.extend(labels.cpu().numpy())
-#             all_preds.extend(preds.cpu().numpy())
-
-#     # Calculate F1 Score
-#     f1 = f1_score(all_labels, all_preds, average='binary')
-#     return f1
-
-
 def plot_metrics(metrics: dict[list[float]], test_f1: float,
                  category: str, output_dir: str
                  ) -> None:
@@ -280,19 +217,19 @@ def main():
         val_loader = DataLoader(val_dataset, batch_size=32)
         test_loader = DataLoader(test_dataset, batch_size=32)
 
-        model = LSTMClassifier().to(device)
+        model = LSTMClassifier(tokenizer.vocab_size).to(device)
         criterion = nn.BCELoss()
         optimizer = torch.optim.Adam(model.parameters(), lr=CLS_LR)
 
         metrics = {'loss': [], 'f1': []}
 
         logging.info(f'{category} category is being trained:')
-        for epoch in range(CLS_NUM_EPOCHS):
-            logging.info(f'\tEpoch {epoch + 1} out of {CLS_NUM_EPOCHS}')
+        for epoch in range(NUM_EPOCHS):
+            logging.info(f'\tEpoch {epoch + 1} out of {NUM_EPOCHS}')
             loss = train(model, train_loader, criterion, optimizer, device)
-            logging.info('\tTrained')
+            logging.info(f'\tTrain loss: {loss}')
             f1 = evaluate(model, val_loader, device)
-            logging.info('\tEvaluated')
+            logging.info(f'\tValidation f1: {f1}')
             metrics['loss'].append(loss)
             metrics['f1'].append(f1)
 
@@ -301,13 +238,12 @@ def main():
         logging.info(f'Test f1: {final_f1}')
 
         plot_metrics(metrics, final_f1, category, CLS_MODELS_PLOTS_DIR)
-        logging.info('Plotted')
-        print()
+        logging.info('Loss and f1 are plotted')
 
         torch.save(model.state_dict(),
                    os.path.join(CLS_MODELS_DIR,
                                 f'{category}.pth'))
-        logging.info('Model saved')
+        logging.info('Model is saved')
 
 
 if __name__ == '__main__':
