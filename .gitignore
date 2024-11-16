@@ -1,0 +1,4 @@
+*_pycache_*
+environment.yml
+environment_full.yml
+*.Identifier*
