@@ -1,5 +1,5 @@
 VAL_RATIO: float = 0.1
-NUM_EPOCHS: int = 5
+NUM_EPOCHS: int = 3
 
 CLS_TARGET_NAME: str = 'is_safe'
 

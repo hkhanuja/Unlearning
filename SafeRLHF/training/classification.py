@@ -192,6 +192,7 @@ def main():
                          f != f'{CLS_SAFE_DATA_FILE_NAME}_train.csv' and
                          f != f'{CLS_SAFE_DATA_FILE_NAME}_test.csv']
     unsafe_categories = list(set(unsafe_categories))
+    unsafe_categories = sorted(unsafe_categories, key=lambda x: (x != "Privacy Violation", x))
 
     for category in unsafe_categories:
         unsafe_train_data, unsafe_test_data = load_data(CLS_TRAIN_TEST_DATA_DIR,

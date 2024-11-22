@@ -17,11 +17,11 @@ def create_safety_categories_files(categories: list,
     '''
     for cat in categories:
         create_empty_file(os.path.join(output_dir, f'{cat}.csv'),
-                          ['safe_response', 'unsafe_response'])
+                          ['prompt', 'safe_response', 'unsafe_response'])
         create_empty_file(os.path.join(train_test_dir, f'{cat}_train.csv'),
-                          ['safe_response', 'unsafe_response'])
+                          ['prompt', 'safe_response', 'unsafe_response'])
         create_empty_file(os.path.join(train_test_dir, f'{cat}_test.csv'),
-                          ['safe_response', 'unsafe_response'])
+                          ['prompt', 'safe_response', 'unsafe_response'])
 
 
 def main():
