@@ -288,6 +288,13 @@ class CustomTrainerForgetting(Trainer):
             retain_outputs = model(retain_input_ids,labels=retain_labels, attention_mask=retain_attention_mask)
             retain_loss = retain_outputs.loss
             loss = self.npo_coeff * forget_loss + self.grad_diff_coeff * retain_loss
+            
+            if self.state.global_step % self.args.logging_steps == 0:    
+                self.log({
+                "forget_loss": forget_loss.item(),
+                "retain_loss": retain_loss.item(),
+                "final_loss": loss.item()
+                })
 
         ### Implement the NPO
         elif self.loss_type == 'npo':

@@ -1,4 +1,4 @@
-from data_module import TextForgetDatasetQA, TextForgetDatasetDPOQA, TextForgetDatasetKTOQA
+from data_module import TextForgetDatasetQA, TextForgetDatasetDPOQA, TextForgetDatasetKTOQA, SafeRLHFTextForgetDatasetQA_V2
 from dataloader import CustomTrainerForgetting, custom_data_collator_forget
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -8,6 +8,9 @@ import os
 from peft import LoraConfig, get_peft_model, PeftModel
 from pathlib import Path
 from utils import get_model_identifiers_from_yaml, set_random_seed
+
+import wandb
+
 
 os.environ["HUGGINGFACE_TOKEN"] = "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"
 
@@ -41,6 +44,13 @@ def print_trainable_parameters(model):
 @hydra.main(version_base=None, config_path="config", config_name="forget")
 def main(cfg):
 
+    wandb.init(
+    project="ModelUnlearning_SimPO", 
+    name=cfg.experiment_name,
+    allow_val_change=True,
+     
+    )
+
     seed = cfg.seed
     set_random_seed(seed)
 
@@ -51,7 +61,7 @@ def main(cfg):
         local_rank = int(os.environ.get('LOCAL_RANK', '0'))
         device_map = {'': local_rank}
 
-    os.environ["WANDB_DISABLED"] = "true"
+    # os.environ["WANDB_DISABLED"] = "true"
     model_cfg = get_model_identifiers_from_yaml(cfg.model_family)
     model_id = model_cfg["hf_key"]
     if cfg.model_path is None:
@@ -67,13 +77,8 @@ def main(cfg):
 
     max_length = 500
 
-    # determine the data path.
-    if cfg.split in ['forget01','forget05','forget10']:
-        data_path = 'locuslab/TOFU'
-    elif cfg.split in ['forget20','forget35','forget50','forget90']:
-        data_path = './TOFU_data'
-    else:
-        raise NotImplementedError
+    
+    data_path = cfg.data_path
 
     if cfg.forget_loss in ["dpo","dpo_KL","dpo_grad_diff"]:
         torch_format_dataset = TextForgetDatasetDPOQA(data_path, 
@@ -90,12 +95,20 @@ def main(cfg):
                                                     split=cfg.split)
 
     else:
-        torch_format_dataset = TextForgetDatasetQA(data_path, 
+        # torch_format_dataset = TextForgetDatasetQA(data_path, 
+        #                                             tokenizer=tokenizer, 
+        #                                             model_family = cfg.model_family, 
+        #                                             max_length=max_length, 
+        #                                             split=cfg.split, 
+        #                                             loss_type=cfg.forget_loss)
+
+        torch_format_dataset = SafeRLHFTextForgetDatasetQA_V2(data_path, 
                                                     tokenizer=tokenizer, 
                                                     model_family = cfg.model_family, 
                                                     max_length=max_length, 
-                                                    split=cfg.split, 
+                                                    split="train", 
                                                     loss_type=cfg.forget_loss)
+    
     
     batch_size = cfg.batch_size
     gradient_accumulation_steps = cfg.gradient_accumulation_steps
@@ -118,7 +131,7 @@ def main(cfg):
     else:
         raise NotImplementedError("The warmup_steps must be an integer or step_per_epoch.")
 
-    print(f"steps_per_epoch: {steps_per_epoch}, eval_steps: {eval_steps}, warmup_steps: {warmup_steps}")
+    print(f"steps_per_epoch: {steps_per_epoch}, eval_steps: {eval_steps}, warmup_steps: {warmup_steps}, max_steps: {max_steps}")
     training_args = transformers.TrainingArguments(
             per_device_train_batch_size=batch_size,
             per_device_eval_batch_size=batch_size,
@@ -128,13 +141,15 @@ def main(cfg):
             learning_rate=cfg.lr,
             bf16=True,
             bf16_full_eval=True,
-            logging_steps=max_steps+1, # do not save the model
+            logging_steps=25, # do not save the model
             logging_dir=f'{cfg.save_dir}/logs',
             output_dir=cfg.save_dir,
             optim="paged_adamw_32bit",
-            save_steps=max_steps+1, # do not save the model
+            save_steps=250, # do not save the model
             ddp_find_unused_parameters= False,
-
+            
+            save_total_limit=1,
+            report_to="wandb",
             # deepspeed='config/ds_config.json',
 
             weight_decay = cfg.weight_decay,
@@ -161,7 +176,7 @@ def main(cfg):
     if path_found:
         print("Loading from checkpoint")
         model = AutoModelForCausalLM.from_pretrained(cfg.model_path, use_flash_attention_2=model_cfg["flash_attention2"]=="true", torch_dtype=torch.bfloat16, trust_remote_code = True)
-        oracle_model = AutoModelForCausalLM.from_pretrained(cfg.model_path, use_flash_attention_2=model_cfg["flash_attention2"]=="true", torch_dtype=torch.bfloat16, trust_remote_code = True)
+        # oracle_model = AutoModelForCausalLM.from_pretrained(cfg.model_path, use_flash_attention_2=model_cfg["flash_attention2"]=="true", torch_dtype=torch.bfloat16, trust_remote_code = True)
 
     else:
         print("Loading after merge and unload")
@@ -203,7 +218,8 @@ def main(cfg):
 
     
     model.to('cuda')
-    oracle_model.to('cuda')
+    if oracle_model is not None:
+        oracle_model.to('cuda')
 
 
     trainer = CustomTrainerForgetting(
@@ -230,28 +246,34 @@ def main(cfg):
     
     
     
-    disable_training = True
+    disable_training = False
     disable_eval = True
     if not disable_training:
         trainer.train()
     else:
         print(f"Skipping Train step")
+
+        #save the tokenizer
+    model.save_pretrained(cfg.save_dir)
+    tokenizer.save_pretrained(cfg.save_dir)
         
     if not disable_eval:
         trainer.evaluate()
     else:
         print(f"Skipping Eval step")
-    #save the tokenizer
-    model.save_pretrained(cfg.save_dir)
-    tokenizer.save_pretrained(cfg.save_dir)
+
 
     #delete all "global_step*" files in the save_dir/checkpoint-*/ directories
-    if local_rank == 0:
-        for file in Path(cfg.save_dir).glob("checkpoint-*"):
-            for global_step_dir in file.glob("global_step*"):
-                #delete the directory
-                import shutil
-                shutil.rmtree(global_step_dir)
+    # if local_rank == 0:
+    #     for file in Path(cfg.save_dir).glob("checkpoint-*"):
+    #         for global_step_dir in file.glob("global_step*"):
+    #             #delete the directory
+    #             import shutil
+    #             shutil.rmtree(global_step_dir)
+
+
+    wandb.finish()
+
 
 
 

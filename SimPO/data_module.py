@@ -84,22 +84,35 @@ class TextForgetDatasetQA(Dataset):
             rets.append(converted_data)
         return rets
 
-class SafeRLHFTextForgetDatasetQA(Dataset):
-    def __init__(self, data_path, tokenizer, model_family,  max_length=512, split = "forget10", loss_type="idk"):
-        super(TextForgetDatasetQA, self).__init__()
+# class SafeRLHFTextForgetDatasetQA(Dataset):
+    def __init__(self, data_path, tokenizer, model_family,  max_length=512, split = "train", loss_type="idk"):
+        super().__init__()
+        print(f"Initialising SafeRLHFTextForgetDatasetQA")
+
         self.tokenizer = tokenizer
         self.max_length = max_length
-        
-        if './TOFU_data' not in data_path: # load dataset from hugingface hub.
-            self.forget_data = datasets.load_dataset(data_path, split)["train"]
-        else: # load dataset from local files.
-            self.forget_data = datasets.load_dataset('json', data_files=os.path.join(data_path, split+'.json'))['train']
 
-        retain_split = "retain" + str(100 - int(split.replace("forget", ""))).zfill(2)
-        if './TOFU_data' not in data_path:
-            self.retain_data = datasets.load_dataset(data_path, retain_split)["train"]
+
+        if split == "train":
+            forget_data_path = os.path.join(data_path, "Privacy Violation_train.csv") 
+            retain_data_path = os.path.join(data_path, "safe_train.csv")
         else:
-            self.retain_data = datasets.load_dataset('json', data_files=os.path.join(data_path, retain_split+'.json'))['train']
+            forget_data_path = os.path.join(data_path, "Privacy Violation_test.csv") 
+            retain_data_path = os.path.join(data_path, "safe_test.csv")
+
+        self.forget_data = load_dataset('csv', data_files=forget_data_path)['train']
+        self.retain_data = load_dataset('csv', data_files=retain_data_path)['train']
+        print(f"Forget data size : {len(self.forget_data)} | Retain data size : {len(self.retain_data)}")
+
+        sample_size = min(len(self.forget_data), len(self.retain_data))
+        # sample_size = 200
+        
+        print(f"Sampling first {sample_size} data points from the dataset. ")
+
+        self.forget_data = self.forget_data.select(range(sample_size))
+        self.retain_data = self.retain_data.select(range(sample_size))
+
+
 
         self.model_configs = get_model_identifiers_from_yaml(model_family)
         self.loss_type = loss_type
@@ -122,8 +135,8 @@ class SafeRLHFTextForgetDatasetQA(Dataset):
             
             torch.manual_seed(idx)
             idx = idx if data_type != "retain" else (idx + torch.randint(0, len(self.retain_data), (1,)).item()) % len(self.retain_data)
-            question = data[idx]['question']
-            answer = data[idx]['answer']
+            question = data[idx]['prompt']
+            answer = data[idx]['response']
 
             if data_type == "idk":
                 #get a random answer position from idk
@@ -133,6 +146,73 @@ class SafeRLHFTextForgetDatasetQA(Dataset):
             converted_data = convert_raw_data_to_model_format(self.tokenizer, self.max_length, question, answer, self.model_configs)
             rets.append(converted_data)
         return rets
+
+
+class SafeRLHFTextForgetDatasetQA_V2(Dataset):
+    def __init__(self, data_path, tokenizer, model_family,  max_length=512, split = "train", loss_type="idk"):
+        super().__init__()
+        print(f"Initialising SafeRLHFTextForgetDatasetQA_V2")
+        self.tokenizer = tokenizer
+        self.max_length = max_length
+        self.idk_in_retain_percent = 0.85
+
+
+        if split == "train":
+            forget_data_path = os.path.join(data_path, "Privacy Violation_train.csv") 
+            retain_data_path = os.path.join(data_path, "safe_train.csv")
+        else:
+            forget_data_path = os.path.join(data_path, "Privacy Violation_test.csv") 
+            retain_data_path = os.path.join(data_path, "safe_test.csv")
+
+        self.forget_data = load_dataset('csv', data_files=forget_data_path)['train']
+        self.retain_data = load_dataset('csv', data_files=retain_data_path)['train']
+        print(f"Forget data size : {len(self.forget_data)} | Retain data size : {len(self.retain_data)}")
+
+        # sample_size = min(len(self.forget_data), len(self.retain_data))
+        sample_size = 200
+        
+        # print(f"Sampling first {sample_size} data points from the dataset. ")
+
+        self.forget_data = self.forget_data.select(range(sample_size))
+        # self.retain_data = self.retain_data.select(range(sample_size))
+
+
+
+        self.model_configs = get_model_identifiers_from_yaml(model_family)
+        self.loss_type = loss_type
+
+        self.idontknowfile = "data/idontknow.jsonl"
+        self.idk = open(self.idontknowfile, "r").readlines()
+
+    def __len__(self):
+        return len(self.forget_data)
+
+    def __getitem__(self, idx):
+        rets = []
+
+        # forget set sample 
+        data = self.forget_data
+        torch.manual_seed(idx)
+        question = data[idx]['prompt']
+        answer = data[idx]['response']
+        converted_data = convert_raw_data_to_model_format(self.tokenizer, self.max_length, question, answer, self.model_configs)
+        rets.append(converted_data)
+
+        # retain set sample
+        if random.random() < self.idk_in_retain_percent: # for few samples, let's train to give i dont know responses. 
+            rand_pos = torch.randint(0, len(self.idk), (1,)).item()
+            answer = self.idk[rand_pos].strip()
+        else: # random question, answer from retain set. 
+            data = self.retain_data
+            torch.manual_seed(idx)
+            idx = (idx + torch.randint(0, len(self.retain_data), (1,)).item()) % len(self.retain_data)
+            question = data[idx]['prompt']
+            answer = data[idx]['response']
+        converted_data = convert_raw_data_to_model_format(self.tokenizer, self.max_length, question, answer, self.model_configs)
+        rets.append(converted_data)
+
+        return rets
+
 
 class TextForgetDatasetDPOQA(Dataset):
     def __init__(self, data_path, tokenizer, model_family, max_length=512, split = "forget10", ):
