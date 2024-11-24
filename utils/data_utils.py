@@ -39,7 +39,9 @@ def load_model(model, load_path: str):
         logger.info(f"Loading model from {load_path}")
         
         # Load assistant model
-        model.assistant_model.load_pretrained(os.path.join(load_path, "assistant_model"))
+        assistant_model_path = os.path.join(load_path, "assistant_model")
+        if os.path.exists(assistant_model_path):
+            model.assistant_model.load_pretrained(assistant_model_path)
         
         logger.info("Model loaded successfully")
     except Exception as e:

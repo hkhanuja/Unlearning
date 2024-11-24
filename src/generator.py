@@ -5,7 +5,8 @@ class ResponseGenerator:
         self.base_model = base_model
         self.assistant_model = assistant_model
         self.tokenizer = tokenizer
-    
+        self.device = torch.device("cuda:0")
+
     @torch.no_grad()
     def generate(
         self,
@@ -19,12 +20,22 @@ class ResponseGenerator:
         self.assistant_model.eval()
         
         formatted_prompt = f"### Instruction:\n{prompt}\n\n### Response:\n"
+
+        # Move inputs to GPU right after tokenization
         inputs = self.tokenizer(
             formatted_prompt,
             return_tensors="pt",
             max_length=max_length,
             truncation=True
-        ).to(self.base_model.device)
+        )
+        # Move all tensors in inputs to GPU
+        inputs = {k: v.to(self.device) for k, v in inputs.items()}
+        inputs = self.tokenizer(
+            formatted_prompt,
+            return_tensors="pt",
+            max_length=max_length,
+            truncation=True
+        )
         
         base_outputs = self.base_model.generate(
             **inputs,
@@ -46,6 +57,10 @@ class ResponseGenerator:
         
         filtered_scores = []
         for base_score, assistant_score in zip(base_outputs.scores, assistant_outputs.scores):
+            # Ensure scores are on GPU
+            base_score = base_score.to(self.device)
+            assistant_score = assistant_score.to(self.device)
+            
             mask = torch.abs(assistant_score) > filter_threshold
             filtered_assistant = assistant_score * mask
             final_score = base_score - alpha * filtered_assistant

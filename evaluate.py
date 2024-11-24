@@ -1,4 +1,11 @@
-# evaluate.py
+import warnings
+
+# Filter warnings
+warnings.filterwarnings("ignore", message=".*_register_pytree_node*")
+warnings.filterwarnings("ignore", message=".*MatMul8bitLt: inputs will be cast.*")
+warnings.filterwarnings("ignore", message=".*gradient checkpointing.*")
+warnings.filterwarnings("ignore", message=".*torch.load*")
+
 import os
 from datetime import datetime
 from src.config import ModelConfig, LoRAConfig, TrainingConfig
@@ -24,46 +31,96 @@ def calculate_metrics(original_responses: List[str],
     logger.info("Calculating evaluation metrics...")
     rouge = Rouge()
     
-    # Privacy Protection
-    privacy_bleu = np.mean([
-        sentence_bleu([orig.split()], unl.split())
-        for orig, unl in zip(original_responses, unlearned_responses)
-    ])
+    # First, let's check for empty responses
+    empty_responses = []
+    for i, (orig, unl, gt) in enumerate(zip(original_responses, unlearned_responses, ground_truth)):
+        if not orig.strip() or not unl.strip() or not gt.strip():
+            empty_responses.append(i)
+            logger.warning(f"Empty response found at index {i}:")
+            logger.warning(f"Original: '{orig}'")
+            logger.warning(f"Unlearned: '{unl}'")
+            logger.warning(f"Ground truth: '{gt}'")
     
-    privacy_rouge = np.mean([
-        rouge.get_scores(unl, orig)[0]['rouge-l']['f']
-        for orig, unl in zip(original_responses, unlearned_responses)
-    ])
+    if empty_responses:
+        logger.warning(f"Found {len(empty_responses)} empty responses. Filtering them out.")
+        # Filter out empty responses
+        filtered_orig = [r for i, r in enumerate(original_responses) if i not in empty_responses]
+        filtered_unl = [r for i, r in enumerate(unlearned_responses) if i not in empty_responses]
+        filtered_gt = [r for i, r in enumerate(ground_truth) if i not in empty_responses]
+    else:
+        filtered_orig = original_responses
+        filtered_unl = unlearned_responses
+        filtered_gt = ground_truth
     
-    # Utility Preservation
-    utility_bleu = np.mean([
-        sentence_bleu([gt.split()], unl.split())
-        for gt, unl in zip(ground_truth, unlearned_responses)
-    ])
-    
-    utility_rouge = np.mean([
-        rouge.get_scores(unl, gt)[0]['rouge-l']['f']
-        for gt, unl in zip(ground_truth, unlearned_responses)
-    ])
-    
-    metrics = {
-        "privacy_protection": {
-            "bleu": float(privacy_bleu),
-            "rouge": float(privacy_rouge)
-        },
-        "utility_preservation": {
-            "bleu": float(utility_bleu),
-            "rouge": float(utility_rouge)
+    if not filtered_orig:
+        logger.error("No valid responses remaining after filtering!")
+        return {
+            "privacy_protection": {
+                "bleu": 0.0,
+                "rouge": 0.0
+            },
+            "utility_preservation": {
+                "bleu": 0.0,
+                "rouge": 0.0
+            }
         }
-    }
+
+    try:
+        # Add minimal content for empty responses to avoid ROUGE errors
+        processed_unl = [unl if unl.strip() else "empty" for unl in filtered_unl]
+        processed_orig = [orig if orig.strip() else "empty" for orig in filtered_orig]
+        processed_gt = [gt if gt.strip() else "empty" for gt in filtered_gt]
+
+        # Privacy Protection
+        privacy_bleu = np.mean([
+            sentence_bleu([orig.split()], unl.split())
+            for orig, unl in zip(original_responses, unlearned_responses)
+        ])
+        
+        privacy_rouge = np.mean([
+            rouge.get_scores(unl, orig)[0]['rouge-l']['f']
+            for orig, unl in zip(original_responses, unlearned_responses)
+        ])
+        
+        # Utility Preservation
+        utility_bleu = np.mean([
+            sentence_bleu([gt.split()], unl.split())
+            for gt, unl in zip(ground_truth, unlearned_responses)
+        ])
+        
+        utility_rouge = np.mean([
+            rouge.get_scores(unl, gt)[0]['rouge-l']['f']
+            for gt, unl in zip(ground_truth, unlearned_responses)
+        ])
+        
+        metrics = {
+            "privacy_protection": {
+                "bleu": float(privacy_bleu),
+                "rouge": float(privacy_rouge)
+            },
+            "utility_preservation": {
+                "bleu": float(utility_bleu),
+                "rouge": float(utility_rouge)
+            }
+        }
     
-    logger.info("Metrics calculation completed")
-    return metrics
+        logger.info("Metrics calculation completed")
+        return metrics
+    
+    except Exception as e:
+        logger.error(f"Error calculating metrics: {str(e)}")
+        logger.error("Sample responses:")
+        for i in range(min(5, len(filtered_unl))):
+            logger.error(f"Index {i}:")
+            logger.error(f"Original: '{filtered_orig[i]}'")
+            logger.error(f"Unlearned: '{filtered_unl[i]}'")
+            logger.error(f"Ground truth: '{filtered_gt[i]}'")
+        raise
 
 def main():
     # Set up logging
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    log_dir = "logs"
+    log_dir = r"/home/hice1/pli319/scratch/CSE8803/logs"
     os.makedirs(log_dir, exist_ok=True)
     logger = setup_logger(
         "evaluation",
@@ -77,13 +134,13 @@ def main():
         
         # Download/load base model with memory-efficient settings
         logger.info("Setting up models...")
-        downloader = ModelDownloader()
+        downloader = ModelDownloader(r"/home/hice1/pli319/scratch/CSE8803/models")
         model_path, _ = downloader.download_alpaca()
         
         model_config = ModelConfig(
             model_path=model_path,
             num_assistant_layers=8,
-            load_in_8bit=True  # Enable 8-bit quantization
+            load_in_8bit=False  # Disable 8-bit quantization
         )
         
         # Initialize models with proper device handling
@@ -122,16 +179,24 @@ def main():
                 
                 for item in batch:
                     # Generate with memory clearing between batches
-                    with torch.cuda.amp.autocast():  # Use automatic mixed precision
+                    with torch.amp.autocast('cuda'):  # Use automatic mixed precision
                         original_response = original_model.generate(item["prompt"])
                         unlearned_response = unlearned_model.generate(item["prompt"])
                         
+                        # Add validation
+                        if not original_response.strip():
+                            logger.warning(f"Empty original response for prompt: {item['prompt']}")
+                        if not unlearned_response.strip():
+                            logger.warning(f"Empty unlearned response for prompt: {item['prompt']}")
+
                     original_responses.append(original_response)
                     unlearned_responses.append(unlearned_response)
                     ground_truth.append(item["response"])
                     
                     # Clear cache after each generation
                     torch.cuda.empty_cache()
+
+                break
 
         except Exception as e:
             logger.error(f"Error during model operations: {str(e)}")
