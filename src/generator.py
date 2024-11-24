@@ -66,8 +66,20 @@ class ResponseGenerator:
             final_score = base_score - alpha * filtered_assistant
             filtered_scores.append(final_score)
         
-        final_tokens = torch.cat([
-            torch.argmax(score, dim=-1) for score in filtered_scores
-        ])
+        # Get the final tokens
+        final_tokens = base_outputs.sequences[0]  # Start with base sequence
         
-        return self.tokenizer.decode(final_tokens, skip_special_tokens=True)
+        # Apply the filtered scores to get new tokens
+        for i, score in enumerate(filtered_scores):
+            next_token = torch.argmax(score, dim=-1)
+            if i + 1 < len(final_tokens):
+                final_tokens[i + 1] = next_token
+        
+        # Decode and return
+        decoded_text = self.tokenizer.decode(final_tokens, skip_special_tokens=True)
+        
+        # Remove the prompt from the response if it's included
+        if decoded_text.startswith(prompt):
+            decoded_text = decoded_text[len(prompt):].strip()
+            
+        return decoded_text

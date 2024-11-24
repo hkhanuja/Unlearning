@@ -21,6 +21,8 @@ class BaseModel:
             max_length=512,
             temperature=0.7,
             top_p=0.9,
+            top_k=50,
+            num_beams=1,
             do_sample=True,
             pad_token_id=self.model.config.pad_token_id,
             bos_token_id=self.model.config.bos_token_id,

@@ -19,6 +19,8 @@ from tqdm import tqdm
 import json
 import logging
 import torch
+from src.model.base import BaseModel
+from src.tokenizer import UnlearningTokenizer
 
 def calculate_metrics(original_responses: List[str], 
                      unlearned_responses: List[str], 
@@ -148,11 +150,13 @@ def main():
         try:
             # Try loading original model
             logger.info("Loading original model...")
-            original_model = AlpacaUnlearning(
-                model_config=model_config,
-                lora_config=LoRAConfig(),
-                training_config=TrainingConfig()
+            base_model = BaseModel(
+                model_path=model_config.model_path,
+                load_in_8bit=False  
             )
+            
+            # Initialize tokenizer
+            tokenizer = UnlearningTokenizer(model_config.model_path)
             
             # Try loading unlearned model
             logger.info("Loading unlearned model...")
@@ -178,9 +182,30 @@ def main():
                 batch = test_data[i:min(i + batch_size, len(test_data))]
                 
                 for item in batch:
+                    # Format prompt properly
+                    formatted_prompt = f"### Instruction:\n{item['prompt']}\n\n### Response:\n"
+                    logger.debug(f"Processing prompt: {formatted_prompt}")
+
+                    # Generate with base model
+                    inputs = tokenizer(
+                        formatted_prompt,
+                        return_tensors="pt",
+                        max_length=512,
+                        truncation=True
+                    ).to("cuda:0")
+                    
                     # Generate with memory clearing between batches
                     with torch.amp.autocast('cuda'):  # Use automatic mixed precision
-                        original_response = original_model.generate(item["prompt"])
+                        base_outputs = base_model.generate(
+                            **inputs,
+                            max_length=512,
+                            temperature=0.7,
+                            output_scores=True,
+                            return_dict_in_generate=True,
+                        )
+                        original_response = tokenizer.decode(base_outputs.sequences[0], skip_special_tokens=True)
+                        
+
                         unlearned_response = unlearned_model.generate(item["prompt"])
                         
                         # Add validation
@@ -196,7 +221,8 @@ def main():
                     # Clear cache after each generation
                     torch.cuda.empty_cache()
 
-                break
+                if i > 20 * batch_size:
+                    break
 
         except Exception as e:
             logger.error(f"Error during model operations: {str(e)}")
