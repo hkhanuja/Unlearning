@@ -80,6 +80,6 @@ class ResponseGenerator:
         
         # Remove the prompt from the response if it's included
         if "### Response:" in decoded_text:
-            decoded_text = decoded_text.split('### Response:\n')[1]
+            decoded_text = decoded_text.split('### Response:\n')[1].strip()
             
         return decoded_text

@@ -85,6 +85,10 @@ def process_batch(
                     return_dict_in_generate=True,
                 )
                 original_response = tokenizer.decode(base_outputs.sequences[0], skip_special_tokens=True)
+
+                if original_response.startswith(formatted_prompt):
+                    original_response = original_response[:len(formatted_prompt)].strip()
+
                 unlearned_response = unlearned_model.generate(item["prompt"])
                 
                 # Add validation
