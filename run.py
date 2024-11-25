@@ -87,7 +87,7 @@ def main():
         
         training_config = TrainingConfig(
             learning_rate=5e-4,
-            num_epochs=15,
+            num_epochs=50,
             batch_size=4
         )
         

@@ -26,7 +26,7 @@ class ResponseGenerator:
             formatted_prompt,
             return_tensors="pt",
             max_length=max_length,
-            truncation=True
+            truncation=False
         )
         # Move all tensors in inputs to GPU
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
@@ -34,7 +34,7 @@ class ResponseGenerator:
             formatted_prompt,
             return_tensors="pt",
             max_length=max_length,
-            truncation=True
+            truncation=False
         )
         
         base_outputs = self.base_model.generate(
@@ -79,7 +79,7 @@ class ResponseGenerator:
         decoded_text = self.tokenizer.decode(final_tokens, skip_special_tokens=True)
         
         # Remove the prompt from the response if it's included
-        if decoded_text.startswith(prompt):
-            decoded_text = decoded_text[len(prompt):].strip()
+        if "### Response:" in decoded_text:
+            decoded_text = decoded_text.split('### Response:\n')[1]
             
         return decoded_text
