@@ -233,6 +233,60 @@ def calculate_metrics(responses: List[str],
         logger.error(f"Error calculating metrics: {str(e)}")
         raise
 
+def evaluate_perplexity(base_model, assistant_model, tokenizer, logger: logging.Logger, alpha: float = 0.75) -> float:
+    """Calculate perplexity on wikitext2 dataset using logit difference."""
+    data_path = "data/wikitext2_test.txt"
+    
+    try:
+        if not os.path.exists(data_path):
+            logger.error(f"Wikitext file not found at {data_path}")
+            return float('inf')
+            
+        with open(data_path, 'r', encoding='utf-8') as f:
+            text = f.read()
+        
+        logger.info("Calculating perplexity on wikitext2...")
+        
+        # Tokenize text
+        encodings = tokenizer(text, return_tensors="pt", truncation=True, max_length=1024)
+        
+        max_length = 1024
+        nlls = []
+        
+        for i in range(0, encodings.input_ids.size(1), max_length):
+            end_i = min(i + max_length, encodings.input_ids.size(1))
+            input_ids = encodings.input_ids[:, i:end_i].to("cuda:0")
+            target_ids = input_ids.clone()
+            
+            with torch.no_grad():
+                # Get base model outputs
+                base_outputs = base_model(input_ids, labels=target_ids)
+                base_logits = base_outputs.logits
+                
+                # Get assistant model outputs
+                assistant_outputs = assistant_model(input_ids, labels=target_ids)
+                assistant_logits = assistant_outputs.logits
+                
+                # Calculate final logits using logit difference
+                final_logits = base_logits - alpha * assistant_logits
+                
+                # Calculate loss using final logits
+                loss_fct = torch.nn.CrossEntropyLoss()
+                shift_logits = final_logits[..., :-1, :].contiguous()
+                shift_labels = target_ids[..., 1:].contiguous()
+                neg_log_likelihood = loss_fct(shift_logits.view(-1, shift_logits.size(-1)), 
+                                           shift_labels.view(-1))
+                
+            nlls.append(neg_log_likelihood)
+        
+        perplexity = torch.exp(torch.stack(nlls).mean())
+        logger.info(f"Perplexity calculation complete: {perplexity:.4f}")
+        return perplexity
+        
+    except Exception as e:
+        logger.error(f"Error calculating perplexity: {str(e)}")
+        return float('inf')
+
 def main():
     # Set up logging
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -297,7 +351,7 @@ def main():
         
         # Process unsafe test data
         logger.info("Evaluating on unsafe data...")
-        unsafe_data = load_data("data/Privacy Violation_test.csv")
+        unsafe_data = load_data("data/unsafe_sampled_full.csv")
         
         for i in tqdm(range(0, len(unsafe_data), batch_size)):
             batch = unsafe_data[i:min(i + batch_size, len(unsafe_data))]
@@ -312,8 +366,8 @@ def main():
             responses_dict["unlearned_responses"].extend(unl_resp)
             responses_dict["ground_truth"].extend(gt)
             
-            if i > 10 * batch_size:
-                break
+            # if i > 10 * batch_size:
+            #     break
         
         # Save responses
         save_path = os.path.join(results_dir, f"responses_{timestamp}.pkl")
@@ -322,17 +376,17 @@ def main():
         
         # Process safe data
         logger.info("Evaluating on safe data...")
-        safe_data = load_data("data/safe.csv")
+        safe_data = load_data("data/safe_sampled_full.csv")
 
         # Random sampling of safe data
-        np.random.seed(42)
-        safe_indices = np.random.choice(
-            len(safe_data), 
-            size=int(0.05 * len(safe_data)), 
-            replace=False
-        )
-        safe_data = [safe_data[i] for i in safe_indices]
-        logger.info(f"Sampled {len(safe_data)} examples from safe set")
+        # np.random.seed(42)
+        # safe_indices = np.random.choice(
+        #     len(safe_data), 
+        #     size=int(0.05 * len(safe_data)), 
+        #     replace=False
+        # )
+        # safe_data = [safe_data[i] for i in safe_indices]
+        # logger.info(f"Sampled {len(safe_data)} examples from safe set")
 
         safe_responses_dict = {
             "prompts": [],
@@ -354,8 +408,8 @@ def main():
             safe_responses_dict["unlearned_responses"].extend(unl_resp)
             safe_responses_dict["ground_truth"].extend(gt)
 
-            if i > 10 * batch_size:
-                break
+            # if i > 10 * batch_size:
+            #     break
         
         # Calculate metrics for unsafe set
         unsafe_metrics = calculate_metrics(
@@ -377,7 +431,13 @@ def main():
         logger.info("Calculating perplexity...")
         wikitext_path = "data/wiki"
         try:
-            perplexity = evaluate_perplexity(unlearned_model.base_model.model, tokenizer.tokenizer, logger)
+            perplexity = evaluate_perplexity(
+                unlearned_model.base_model.model, 
+                unlearned_model.assistant_model.model, 
+                tokenizer.tokenizer, 
+                logger,
+                alpha=0.75
+            )
             logger.info(f"Calculated perplexity: {perplexity:.4f}")
         except Exception as e:
             logger.error(f"Error calculating perplexity: {str(e)}")

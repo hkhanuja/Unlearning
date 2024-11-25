@@ -1,0 +1,11 @@
+{
+  "metrics": {
+    "unsafe_percentage": 0.23,
+    "safe_percentage": 0.2,
+    "unsafe_samples": 200,
+    "safe_samples": 10,
+    "perplexity": 7.10859489440918
+  },
+  "model_path": "/home/hice1/pli319/scratch/CSE8803/checkpoints/20241115_215854/best_model.pt",
+  "timestamp": "20241125_160617"
+}
