@@ -9,9 +9,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Initialize HuggingFace client
-client = InferenceClient(
-    api_key="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",
-)
 
 # System role definition
 system_role = """
