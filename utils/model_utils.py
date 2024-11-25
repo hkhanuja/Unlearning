@@ -1,4 +1,3 @@
-# utils/model_utils.py
 import os
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from huggingface_hub import snapshot_download
@@ -28,7 +27,37 @@ class ModelDownloader:
         Returns:
             Tuple of (model_path, tokenizer_path)
         """
-        logger.info(f"Downloading Alpaca model: {model_name}")
+        return self._download_model(model_name, force_download)
+    
+    def download_llama_8b_instruct(
+        self,
+        model_name: str = "meta-llama/Meta-Llama-3-8B-Instruct",
+        force_download: bool = False
+    ) -> Tuple[str, str]:
+        """
+        Download LLaMA-8B-Instruct model and tokenizer, returning their paths.
+        
+        Args:
+            model_name: Hugging Face model identifier
+            force_download: Whether to force re-download even if files exist
+            
+        Returns:
+            Tuple of (model_path, tokenizer_path)
+        """
+        return self._download_model(model_name, force_download)
+    
+    def _download_model(self, model_name: str, force_download: bool) -> Tuple[str, str]:
+        """
+        Generic method for downloading a Hugging Face model and tokenizer.
+        
+        Args:
+            model_name: Hugging Face model identifier
+            force_download: Whether to force re-download even if files exist
+            
+        Returns:
+            Tuple of (model_path, tokenizer_path)
+        """
+        logger.info(f"Downloading model: {model_name}")
         
         try:
             # Create model-specific cache directory
