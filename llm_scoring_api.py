@@ -3,12 +3,21 @@ import pandas as pd
 from tqdm import tqdm
 import pickle
 import logging
+from dotenv import load_dotenv
+import os
 
 # Initialize logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Initialize HuggingFace client
+load_dotenv()
+
+# Initialize HuggingFace client
+HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
+client = InferenceClient(
+    api_key = HUGGINGFACE_API_KEY,
+)
 
 # System role definition
 system_role = """

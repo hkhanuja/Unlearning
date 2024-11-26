@@ -4,3 +4,4 @@ environment_full.yml
 *.Identifier*
 logs/
 outputs/
+.env

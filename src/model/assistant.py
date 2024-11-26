@@ -1,6 +1,6 @@
 import torch
 from transformers import LlamaForCausalLM, GenerationConfig
-from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training, TaskType
+from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training, TaskType, PeftModel
 from ..config import LoRAConfig
 import warnings
 import os
