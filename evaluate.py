@@ -411,6 +411,11 @@ def main():
             # if i > 10 * batch_size:
             #     break
         
+        # Save responses
+        save_path = os.path.join(results_dir, f"safe_responses_{timestamp}.pkl")
+        save_responses(safe_responses_dict, save_path)
+        logger.info(f"Safe Responses saved to {save_path}")
+
         # Calculate metrics for unsafe set
         unsafe_metrics = calculate_metrics(
             responses_dict["unlearned_responses"],
