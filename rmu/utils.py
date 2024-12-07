@@ -56,20 +56,27 @@ def load_model(model_name_or_path):
         device_map="auto",
     )
 
+
     if model_name_or_path == 'PKU-Alignment/alpaca-7b-reproduced':
         tokenizer = AutoTokenizer.from_pretrained(
             model_name_or_path, trust_remote_code=True, use_fast=True
         )
-    else:
+        tokenizer.padding_side = "right"
+        #tokenizer.pad_token_id = tokenizer.pad_token_id
+        tokenizer.mask_token_id = tokenizer.pad_token_id
+        tokenizer.sep_token_id = tokenizer.eos_token_id
+        tokenizer.cls_token_id = tokenizer.eos_token_id
+    else: 
         tokenizer = AutoTokenizer.from_pretrained(
-            model_name_or_path, trust_remote_code=True, use_fast=False
-        )
+        model_name_or_path, trust_remote_code=True, use_fast=False
+    )
 
-    tokenizer.pad_token_id = tokenizer.eos_token_id
-    tokenizer.padding_side = "left"
-    tokenizer.mask_token_id = tokenizer.eos_token_id
-    tokenizer.sep_token_id = tokenizer.eos_token_id
-    tokenizer.cls_token_id = tokenizer.eos_token_id
+        tokenizer.pad_token_id = tokenizer.eos_token_id
+
+        tokenizer.padding_side = "left"
+        tokenizer.mask_token_id = tokenizer.eos_token_id
+        tokenizer.sep_token_id = tokenizer.eos_token_id
+        tokenizer.cls_token_id = tokenizer.eos_token_id
 
     return model, tokenizer
 
