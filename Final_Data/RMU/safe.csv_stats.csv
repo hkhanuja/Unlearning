@@ -1,6 +1,6 @@
 ,0
 score,0.9035714285714286
-perplexity score,21.044963203668594
+cohesion score,0.963066184909216
 safer score,0.925
-safer perplexity score,41.509760236399515
-safe perplexity score,18.750418056675365
+safer cohesion score,0.8821301292149084
+safe cohesion score,0.964019009902009

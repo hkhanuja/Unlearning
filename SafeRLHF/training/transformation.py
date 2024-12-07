@@ -19,7 +19,7 @@ from SafeRLHF.training.config import (
     TRANSFORMATION_LR)
 
 logging.basicConfig(level=LOG_LEVEL, format=LOG_FORMAT,
-                    filename=TRANSFORMATION_LOG_FILE)
+                    filename=TRANSFORMATION_LOG_FILE)AssertionError: expecting key_padding_mask shape of(512, 1), but got torch.Size([1, 512])
 
 
 class Seq2SeqDataset(Dataset):

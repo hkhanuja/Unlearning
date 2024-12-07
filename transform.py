@@ -1,9 +1,10 @@
 import os
 import pandas as pd
 import torch
+import torch.nn.functional as F
 
-from transformers import (AutoModelForCausalLM, AutoTokenizer, BertTokenizer,
-                          GPT2LMHeadModel, GPT2Tokenizer)
+from transformers import (
+    AutoModelForSequenceClassification, AutoTokenizer, BertTokenizer)
 
 from config import METHODS_DATA_DIR, FINAL_DATA_DIR
 from SafeRLHF.config import CLS_MODELS_DIR, TRANSFORMATION_MODELS_DIR
@@ -38,15 +39,22 @@ for cat_name in CAT_NAMES:
     TRANSFORMATION_MODELS[cat_name].to(DEVICE)
     TRANSFORMATION_MODELS[cat_name].eval()
 
-PERPLEXITY_TOKENIZER = GPT2Tokenizer.from_pretrained('gpt2')
-PERPLEXITY_MODEL = GPT2LMHeadModel.from_pretrained('gpt2').to(DEVICE)
-PERPLEXITY_MODEL.eval()
+# PERPLEXITY_TOKENIZER = GPT2Tokenizer.from_pretrained('gpt2')
+# PERPLEXITY_MODEL = GPT2LMHeadModel.from_pretrained('gpt2').to(DEVICE)
+# PERPLEXITY_MODEL.eval()
 
-# LLM = AutoModelForCausalLM.from_pretrained(
+# PERPLEXITY_MODEL = AutoModelForCausalLM.from_pretrained(
 #     'PKU-Alignment/alpaca-7b-reproduced',
-#     torch_dtype=torch.bfloat16, device_map='auto')
-# LLM_TOKENIZER = AutoTokenizer.from_pretrained(
+#     torch_dtype=torch.bfloat16, device_map='auto').to(DEVICE)
+# PERPLEXITY_MODEL.eval()
+# PERPLEXITY_TOKENIZER = AutoTokenizer.from_pretrained(
 #     'PKU-Alignment/alpaca-7b-reproduced')
+
+COHESION_TOKENIZER = AutoTokenizer.from_pretrained(
+    'textattack/bert-base-uncased-CoLA')
+COHESION_MODEL = AutoModelForSequenceClassification.from_pretrained(
+    'textattack/bert-base-uncased-CoLA')
+COHESION_MODEL.eval()
 
 
 def get_cls_response(model, prompt: str, response: str):
@@ -135,18 +143,28 @@ def get_transformation_response(model, unsafe_response: str):
     return output_text
 
 
-def calculate_perplexity(response: str) -> float:
-    tokens = PERPLEXITY_TOKENIZER.encode(
-        response, return_tensors='pt').to(DEVICE)
+# def calculate_perplexity(response: str) -> float:
+#     tokens = PERPLEXITY_TOKENIZER.encode(
+#         response, return_tensors='pt').to(DEVICE)
+#     with torch.no_grad():
+#         outputs = PERPLEXITY_MODEL(tokens, labels=tokens)
+#         loss = outputs.loss
+#         perplexity = torch.exp(loss).item()
+#     return perplexity
+
+
+def get_acceptability_score(sentence):
+    inputs = COHESION_TOKENIZER(sentence, return_tensors='pt', truncation=True)
     with torch.no_grad():
-        outputs = PERPLEXITY_MODEL(tokens, labels=tokens)
-        loss = outputs.loss
-        perplexity = torch.exp(loss).item()
-    return perplexity
+        logits = COHESION_MODEL(**inputs).logits
+    probabilities = F.softmax(logits, dim=1)
+    # Probability that the sentence is acceptable
+    acceptability_score = probabilities[0][1].item()
+    return acceptability_score
 
 
 def main():
-    basic_perplexity = calculate_perplexity(BASIC_RESPONSE)
+    basic_cohesion = get_acceptability_score(BASIC_RESPONSE)
 
     methods = [d for d in os.listdir(METHODS_DATA_DIR)
                if os.path.isdir(os.path.join(METHODS_DATA_DIR, d))]
@@ -164,20 +182,24 @@ def main():
             for cat_name in CAT_NAMES:
                 data_df = input_data_df.copy()
                 data_df['score'] = 0.0
-                data_df['perplexity score'] = 0.0
+                data_df['cohesion score'] = 0.0
                 data_df['safer response'] = data_df['response']
                 data_df['safer score'] = 0.0
-                data_df['safer perplexity score'] = 0.0
+                data_df['safer cohesion score'] = 0.0
                 data_df['safe response'] = BASIC_RESPONSE
-                data_df['safe perplexity score'] = basic_perplexity
+                data_df['safe cohesion score'] = basic_cohesion
 
+                i = 1
                 for index, row in data_df.iterrows():
+                    print(f'{i} / {len(data_df)}')
+                    i += 1
                     score = get_cls_response(CLS_MODELS[cat_name],
                                              row['prompt'],
                                              row['response']).item()
                     data_df.at[index, 'score'] = score
-                    perplexity = calculate_perplexity(row['response'])
-                    data_df.at[index, 'perplexity score'] = perplexity
+                    print(len(row['response']))
+                    cohesion = get_acceptability_score(row['response'])
+                    data_df.at[index, 'cohesion score'] = cohesion
 
                     if score <= 0.5:
                         safer_response = get_transformation_response(
@@ -186,25 +208,25 @@ def main():
                         updated_score = get_cls_response(CLS_MODELS[cat_name],
                                                          row['prompt'],
                                                          safer_response).item()
-                        perplexity = calculate_perplexity(safer_response)
+                        cohesion = get_acceptability_score(safer_response)
 
                         data_df.at[index, 'safer response'] = safer_response
                         data_df.at[index, 'safer score'] = updated_score
                         data_df.at[index,
-                                   'safer perplexity score'] = perplexity
+                                   'safer cohesion score'] = cohesion
 
-                        if updated_score > 0.5 and perplexity < 100.0:
+                        if updated_score > 0.5 and cohesion > 0.5:
                             data_df.at[index, 'safe response'] = safer_response
                             data_df.at[index,
-                                       'safe perplexity score'] = perplexity
+                                       'safe cohesion score'] = cohesion
 
                     else:
                         data_df.at[index, 'safer score'] = score
                         data_df.at[index,
-                                   'safer perplexity score'] = perplexity
+                                   'safer cohesion score'] = cohesion
                         data_df.at[index, 'safe response'] = row['response']
                         data_df.at[index,
-                                   'safe perplexity score'] = perplexity
+                                   'safe cohesion score'] = cohesion
 
                 os.makedirs(os.path.join(FINAL_DATA_DIR, method),
                             exist_ok=True)

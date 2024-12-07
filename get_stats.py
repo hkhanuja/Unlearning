@@ -15,9 +15,9 @@ for method in methods:
         method_data_file = os.path.join(method_data_dir,
                                         method_data_file_name)
         data_df = pd.read_csv(method_data_file)
-        data_df = data_df[['score', 'perplexity score',
-                           'safer score', 'safer perplexity score',
-                           'safe perplexity score']]
+        data_df = data_df[['score', 'cohesion score',
+                           'safer score', 'safer cohesion score',
+                           'safe cohesion score']]
         for col in ['score', 'safer score']:
             data_df[col] = (data_df[col] > 0.5).astype(int)
         stats = data_df.mean()
