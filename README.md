@@ -41,6 +41,8 @@ This part operates on data from `./Methods_Data/` and generates transformed resp
 └── update.sh                 # Shell script to update the environment
 ```
 
+---
+
 ## How to Use
 
 ### 1. Clone the Repository
@@ -50,4 +52,18 @@ cd Unlearning
 git checkout -b part_3_transformation origin/part_3_transformation
 ```
 
-### 2. 
+### 2. Set Up the Environment
+```bash
+source activate.sh
+```
+
+### 3. Run the Transformation Pipeline and Getting Stats
+```bash
+python transform.py
+python get_stats.py
+```
+
+### 4. View Results
+- Transformed prompt-response pairs: ./Final_Data/
+- Comparison statistics (e.g., %Safe, Acceptability Scores): ./Final_Data/
+
