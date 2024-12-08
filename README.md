@@ -6,7 +6,7 @@ This repository contains an implementation of Alternate Preference Optimization 
 
 ```bash
 # Clone the repository
-git clone -b part_1_altpo https://github.com/Nikita-A-Tatarinov/Unlearning
+git clone -b part_1_altpo https://github.com/Nikita-A-Tatarinov/Unlearning.git
 
 # Install dependencies
 pip install -r requirements.txt
