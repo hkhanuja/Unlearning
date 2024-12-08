@@ -16,6 +16,8 @@ In this phase, we evaluate various existing unlearning methods for their effecti
 This phase involves designing adversarial prompts to test the robustness of unlearning methods. We explore techniques to "jailbreak" unlearned models and extract unsafe responses. The corresponding implementation is in:
 - **Branch `part_2_jailbreaking`**
 
+`prompt_attack` folder contains different notebooks for various unlearned models that tries to attack the models using prompt engineering techniques to extract out the unlearned information. 
+
 ### Part 3: Unsafe-to-Safe Response Transformation Framework
 In this phase, we developed a lightweight framework to transform unsafe responses into safe ones. The framework uses:
 1. An **LSTM-based classifier** to detect unsafe responses.
