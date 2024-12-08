@@ -48,8 +48,14 @@ To evaluate the unlearned model:
 
 ```bash
 python evaluation/scoring.py
-python evaluation/benchmark.ipynb
 ```
+
+Run the 
+```bash
+evaluation/benchmark.ipynb
+```
+
+for perplexity evaluation on WikiTest-2 test data
 
 
 This will evaluate:
