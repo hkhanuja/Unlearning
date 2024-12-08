@@ -65,5 +65,8 @@ This will evaluate:
 
 ## Result visualization
 
-![Alt text](safe_prompt.png)
+![](safe_prompt.png)
 *Figure 1: Response for a prompt from the safe test dataset.*
+
+![](unsafe_prompt.png)
+*Figure 2: Response for a prompt from the unsafe (Privacy Violation) test dataset.*
