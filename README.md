@@ -14,7 +14,7 @@ pip install -r requirements.txt
 
 ## Quick Start
 
-# Load or download a unlearned model
+# Load the unlearned model
 
 ```bash
 tokenizer = AutoTokenizer.from_pretrained("hkhanuja3/finetuned_alpaca_v0.1")
