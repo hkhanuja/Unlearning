@@ -16,8 +16,7 @@ In this phase, we evaluate various existing unlearning methods for their effecti
 ### Part 2: Prompt Engineering
 This phase involves designing adversarial prompts to test the robustness of unlearning methods. We explore techniques to "jailbreak" unlearned models and extract unsafe responses. The corresponding implementation is in:
 - **Branch `part_2_prompt_engineering `**
-
-`prompt_attack` folder contains different notebooks for various unlearned models that tries to attack the models using prompt engineering techniques to extract out the unlearned information. 
+   * `prompt_attack` folder contains different notebooks for various unlearned models that tries to attack the models using prompt engineering techniques to extract out the unlearned information. 
 
 ### Part 3: Unsafe-to-Safe Response Transformation Framework
 In this phase, we developed a lightweight framework to transform unsafe responses into safe ones. The framework uses:
