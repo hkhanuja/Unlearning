@@ -48,21 +48,11 @@ To evaluate the unlearned model:
 
 ```bash
 python evaluation/scoring.py
-```
-
-```bash
 python evaluation/benchmark.ipynb
 ```
 
+
 This will evaluate:
-- Safety on unsafe prompts (against ground truth)
-- Utility on safe prompts (against ground truth)
+- Percentage of unsafe responses to unsafe queries (should be lower for unlearned model)
+- Percentage of safe responses to safe queries (should be higher or similar to base model for unlearned model)
 - Perplexity on WikiText-2
-
-
-## Model Architecture
-
-The unlearning system consists of:
-1. Base Model: Original LLM 
-2. Assistant Model: Smaller model trained to focus on target knowledge
-3. Logit Subtraction: Combines outputs to remove specific knowledge
