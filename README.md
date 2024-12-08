@@ -15,8 +15,11 @@ pip install -r requirements.txt
 ## Quick Start
 
 # Load or download a unlearned model
+
+```bash
 tokenizer = AutoTokenizer.from_pretrained("hkhanuja3/finetuned_alpaca_v0.1")
 model = AutoModelForCausalLM.from_pretrained("hkhanuja3/finetuned_alpaca_v0.1")
+```
 
 # Generate text
 
@@ -36,7 +39,7 @@ alpaca_output = str(tokenizer.decode(alpaca_output_ids, skip_special_tokens=True
 To train the unlearning model:
 
 ```bash
-Run the 
+Run the notebook forget_altpo_idk.ipynb
 ```
 
 ## Evaluation
@@ -44,7 +47,11 @@ Run the
 To evaluate the unlearned model:
 
 ```bash
-python evaluate.py
+python evaluation/scoring.py
+```
+
+```bash
+python evaluation/benchmark.ipynb
 ```
 
 This will evaluate:
