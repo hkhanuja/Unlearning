@@ -62,3 +62,8 @@ This will evaluate:
 - Percentage of unsafe responses to unsafe queries (should be lower for unlearned model)
 - Percentage of safe responses to safe queries (should be higher or similar to base model for unlearned model)
 - Perplexity on WikiText-2
+
+## Result visualization
+
+![Alt text](safe_response.png)
+*Figure 1: Response for a prompt from the safe test dataset.*
