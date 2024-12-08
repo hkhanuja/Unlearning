@@ -19,6 +19,8 @@ tokenizer = AutoTokenizer.from_pretrained("hkhanuja3/finetuned_alpaca_v0.1")
 model = AutoModelForCausalLM.from_pretrained("hkhanuja3/finetuned_alpaca_v0.1")
 
 # Generate text
+
+```bash
 question_start_token = "[INST] "
 question_end_token = " [/INST]"
 alpaca_input = question_start_token + prompt + question_end_token
