@@ -8,7 +8,7 @@ This repository contains the codebase for our project, **Behavioral Unlearning i
 In this phase, we evaluate various existing unlearning methods for their effectiveness in removing unsafe knowledge while preserving the general utility of the model. Each unlearning method is implemented in a dedicated branch:
 - **Branch `part_1_altpo`**: Implements the Alternate Preference Optimization (AltPO) method. The code for evaluation of the model performance after unlearning baseline is also present in the evaluation folder of this branch.
 - **Branch `part_1_smpo`**: Implements the Simplicity Prevails (SimPO) method.
-    * `SimPO` directory contains the source code for this method. We extend the authors' code to adapt to the SafeRLHF dataset. We tweak the loss function, dataset class, configs, TrainerArgs in this folder our our experiments. 
+    * `SimPO` directory contains the source code for this method. We extend the authors' code to adapt and train on the SafeRLHF dataset. We update the loss function, dataset class, configs, TrainerArgs in this folder our our experiments. 
 - **Branch `part_1_rmu`**: Implements the Representation Misdirection for Unlearning (RMU) method.
 - **Branch `part_1_rfro`**: Implements the Reversing the Forget-Retain Objectives (RFRO) method.
 - **Branch `part_1_sku`**: Implements the Selective Knowledge Negation Unlearning (SKU) method.
