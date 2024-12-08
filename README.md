@@ -4,8 +4,9 @@ RMU (representation misdirection for unlearnin)  is inspired by the representati
 
 For unlearning alpaca-7b, 
 
-1. Use the unlearn corpora under `data/SafeRLHF-corpora` (source: [🤗 PKU-SafeRLHF](https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF)))
-2. Run `python3 -m rmu.unlearn` to run RMU. You can set your hyperparameters depending on your unlearning goals. Our unlearned models with reproducible hyperparameters (penalizing weight on retain loss $\alpha = 0,1,10,100,1000$) on SafeRLHF data , using `Privacy_Violation_train.jsonl` as the forget set and `safe_train_sampled.jsonl` as the retain set, are available at:
+1. Use the unlearn corpora under `data/SafeRLHF-corpora` (source: [🤗 PKU-SafeRLHF](https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF))
+2. Use the alpaca-7b model (source: [🤗 PKU-Alignment/alpaca-7b-reproduced](https://huggingface.co/PKU-Alignment/alpaca-7b-reproduced))
+3. Run `python3 -m rmu.unlearn` to run RMU. You can set your hyperparameters depending on your unlearning goals. Our unlearned models with reproducible hyperparameters (penalizing weight on retain loss $\alpha = 0,1,10,100,1000$) on SafeRLHF data , using `Privacy_Violation_train.jsonl` as the forget set and `safe_train_sampled.jsonl` as the retain set, are available at:
 
 - [🤗 lumiereljy/alpaca-rmu-alpha-0](https://huggingface.co/lumiereljy/alpaca-rmu-alpha-0) | 📙 [run_rmu_alpaca.ipynb](run_rmu_alpaca.ipynb)
 - [🤗 lumiereljy/alpaca-rmu-alpha-1](https://huggingface.co/lumiereljy/alpaca-rmu-alpha-1) | 📙 [run_rmu_alpaca.ipynb](run_rmu_alpaca.ipynb)
