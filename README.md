@@ -59,8 +59,8 @@ source activate.sh
 
 ### 3. Run the Transformation Pipeline and Getting Stats
 ```bash
-python transform.py
-python get_stats.py
+python -m transform.py
+python -m get_stats.py
 ```
 
 ### 4. View Results
