@@ -1,20 +1,24 @@
 ## RMU
 
-<img src="./images/wmdp_logo.png" width="10" /> ***Update 2024-04-23**: we simplified RMU (previously CUT) into a simpler method with similar performance. See Section 4 and Appendix B.4 of the updated paper for more details.*
+RMU (representation misdirection for unlearnin)  is inspired by the representation engineering, based on the idea that model representations encode knowledge of the world and that these representations can be manipulated to affect model behavior. Specifically, this approach proposes a two-part loss function with a forget loss and a retain loss to change model activations on hazardous data to a random direction while preserving model activations on benign data. <br/>
 
-1. Download the unlearn corpora (see [Datasets](#datasets))  and place into `data/`
-2. Note that you will need to download the `bio-forget-corpus.jsonl` from this [Google form](https://docs.google.com/forms/d/e/1FAIpQLSdnQc8Qn0ozSDu3VE8HLoHPvhpukX1t1dIwE5K5rJw9lnOjKw/viewform)
-3. Run `python3 -m rmu.unlearn` to run RMU. You can set your hyperparameters
-depending on your unlearning goals. Our unlearned models with reproducible hyperparameters on WMDP-Bio and WMDP-Cyber, using `bio-forget-corpus.jsonl` and `cyber-forget-corpus.jsonl`, are available at:
+For unlearning alpaca-7b, 
 
-- [🤗 cais/Zephyr_RMU](https://huggingface.co/cais/Zephyr_RMU) | 📙 [run_rmu_zephyr.ipynb](run_rmu_zephyr.ipynb)
-- [🤗 cais/Yi-34B-Chat_RMU](https://huggingface.co/cais/Yi-34B-Chat_RMU) | 📙 [run_rmu_yi.ipynb](run_rmu_yi.ipynb)
-- [🤗 cais/Mixtral-8x7B-Instruct_RMU](https://huggingface.co/cais/Mixtral-8x7B-Instruct_RMU) | 📙 [run_rmu_mixtral.ipynb](run_rmu_mixtral.ipynb)
+1. Use the unlearn corpora under `data/SafeRLHF-corpora` (source: [🤗 PKU-SafeRLHF](https://huggingface.co/datasets/PKU-Alignment/PKU-SafeRLHF)))
+2. Run `python3 -m rmu.unlearn` to run RMU. You can set your hyperparameters depending on your unlearning goals. Our unlearned models with reproducible hyperparameters (penalizing weight on retain loss $\alpha = 0,1,10,100,1000$) on SafeRLHF data , using `Privacy_Violation_train.jsonl` as the forget set and `safe_train_sampled.jsonl` as the retain set, are available at:
 
-*For evaluation, we use `lm-evaluation-harness v0.4.2`.*
+- [🤗 lumiereljy/alpaca-rmu-alpha-0](https://huggingface.co/lumiereljy/alpaca-rmu-alpha-0) | 📙 [run_rmu_alpaca.ipynb](run_rmu_alpaca.ipynb)
+- [🤗 lumiereljy/alpaca-rmu-alpha-1](https://huggingface.co/lumiereljy/alpaca-rmu-alpha-1) | 📙 [run_rmu_alpaca.ipynb](run_rmu_alpaca.ipynb)
+- [🤗 lumiereljy/alpaca-rmu-alpha-10](https://huggingface.co/lumiereljy/alpaca-rmu-alpha-10) | 📙 [run_rmu_alpaca.ipynb](run_rmu_alpaca.ipynb)
+- [🤗 lumiereljy/alpaca-rmu-alpha-100](https://huggingface.co/lumiereljy/alpaca-rmu-alpha-100) | 📙 [run_rmu_alpaca.ipynb](run_rmu_alpaca.ipynb)
+- [🤗 lumiereljy/alpaca-rmu-alpha-1000](https://huggingface.co/lumiereljy/alpaca-rmu-alpha-1000) | 📙 [run_rmu_alpaca.ipynb](run_rmu_alpaca.ipynb)
+    
+
+
+
 
 ## ✏️Citation
-If you find this useful in your research, please consider citing our [paper]():
+If you find this useful in your research, please consider citing [paper]():
 ```
 @misc{li2024wmdp,
       title={The WMDP Benchmark: Measuring and Reducing Malicious Use With Unlearning}, 
